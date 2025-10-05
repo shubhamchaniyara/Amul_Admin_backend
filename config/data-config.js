@@ -10,7 +10,13 @@ const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,  
   logging: true,
-  entities: [require("../src/entity/customer")],
+  entities: [
+    require("../src/entity/customer"),
+    require("../src/entity/product"), 
+    require("../src/entity/measurement"),
+    require("../src/entity/manufacture"),
+    require("../src/entity/product_stock")
+  ],
 });
 
 module.exports = AppDataSource;
