@@ -3,13 +3,16 @@ const { DataSource } = require("typeorm");
 require("../src/entity/customer")
 const AppDataSource = new DataSource({
   type: "postgres",
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  username: process.env.DB_USERNAME,
+  host: process.env.DB_HOST || "db.oktzmedjizirsfqmyazf.supabase.co",
+  port: parseInt(process.env.DB_PORT) || 5432,
+  username: process.env.DB_USERNAME || "postgres",
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  database: process.env.DB_NAME || "postgres",
   synchronize: true,  
-  logging: true,
+  logging: false, // Set to false for production
+  ssl: {
+    rejectUnauthorized: false // Required for Supabase
+  },
   entities: [
     require("../src/entity/customer"),
     require("../src/entity/product"), 
