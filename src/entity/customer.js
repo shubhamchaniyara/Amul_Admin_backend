@@ -28,7 +28,14 @@ module.exports = new EntitySchema({
     contactNumber: {
       type: "varchar",
       length: 20,
-      unique: true,
+      // unique: true,
+    },
+  },
+  relations: {
+    sales: {
+      type: "one-to-many",
+      target: "Sale",        // Sale entity
+      inverseSide: "customer", // matches Sale.customer
     },
   },
 });

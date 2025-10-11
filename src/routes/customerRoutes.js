@@ -143,6 +143,33 @@ router.get("/all", async (req, res) => {
       });
     }
   });
+
+  router.get("/:id/sales", async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const customerRepo = AppDataSource.getRepository("Customer");
+  
+      const customer = await customerRepo.findOne({
+        where: { id: parseInt(id) },
+        relations: ["sales", "sales.product", "sales.measurement"],
+      });
+  
+      if (!customer) return res.status(404).json({ message: "Customer not found" });
+  
+      // Filter delivered sales
+      const deliveredSales = customer.sales.filter(sale => sale.status === "delivered");
+  
+      return res.status(200).json({
+        customerId: customer.id,
+        shopName: customer.shopName,
+        deliveredSales,
+      });
+    } catch (error) {
+      console.error("Error fetching customer sales:", error);
+      return res.status(500).json({ message: "Internal Server Error", error });
+    }
+  });  
     
 
 module.exports = router;

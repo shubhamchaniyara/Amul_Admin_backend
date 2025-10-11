@@ -15,7 +15,8 @@ const AppDataSource = new DataSource({
     require("../src/entity/product"), 
     require("../src/entity/measurement"),
     require("../src/entity/manufacture"),
-    require("../src/entity/product_stock")
+    require("../src/entity/product_stock"),
+    require("../src/entity/sale")
   ],
 });
 

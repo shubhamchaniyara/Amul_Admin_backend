@@ -6,6 +6,7 @@ const AppDataSource = require("./config/data-config");
 const customerRoutes = require("./src/routes/customerRoutes");
 const manufactureRoutes = require("./src/routes/manufactureRoutes");
 const seedProductStocks = require("./src/utils/stock_manage");
+const saleRoutes = require("./src/routes/saleRoutes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 // Use routes
 app.use("/customers", customerRoutes);
 app.use("/manufactures", manufactureRoutes);
+app.use("/sales", saleRoutes);
 async function startServer() {
   try {
     await AppDataSource.initialize();
