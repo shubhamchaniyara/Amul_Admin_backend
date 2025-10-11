@@ -7,6 +7,68 @@ const Stock = require("../entity/product_stock");
 
 const router = express.Router();
 
+// Get all manufactures with pagination and date filtering
+router.get("/", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+
+    const manufactureRepo = AppDataSource.getRepository(Manufacture);
+    
+    // Build where conditions for date filtering
+    let whereConditions = {};
+    if (startDate && endDate) {
+      whereConditions.manufacture_date = {
+        $gte: startDate,
+        $lte: endDate
+      };
+    } else if (startDate) {
+      whereConditions.manufacture_date = {
+        $gte: startDate
+      };
+    } else if (endDate) {
+      whereConditions.manufacture_date = {
+        $lte: endDate
+      };
+    }
+    
+    // Get total count with filters
+    const totalCount = await manufactureRepo.count({
+      where: whereConditions
+    });
+    
+    // Get paginated results with filters
+    const manufactures = await manufactureRepo.find({
+      where: whereConditions,
+      relations: ["product", "measurement"],
+      order: { id: "DESC" }, // Latest first
+      skip: skip,
+      take: limit,
+    });
+    
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return res.status(200).json({
+      message: "Manufactures fetched successfully",
+      manufactures,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalCount: totalCount,
+        limit: limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching manufactures:", error);
+    return res.status(500).json({ message: "Internal Server Error", error });
+  }
+});
+
 // Create manufacture record
 router.post("/add", async (req, res) => {
   const { product_id, measurement_id, manufacture_date, quantity } = req.body;

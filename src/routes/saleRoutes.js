@@ -58,21 +58,36 @@ router.post("/add", async (req, res) => {
 // Get all sales
 router.get("/", async (req, res) => {
   try {
-    const saleRepo = AppDataSource.getRepository(Sale);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
+    const saleRepo = AppDataSource.getRepository(Sale);
+    
+    // Get total count
+    const totalCount = await saleRepo.count();
+    
+    // Get paginated results
     const sales = await saleRepo.find({
       relations: ["product", "measurement", "customer"],
-      order: { id: "DESC" }, // latest first
+      order: { id: "DESC" }, // Latest first
+      skip: skip,
+      take: limit,
     });
 
-    if (!sales.length) {
-      return res.status(404).json({ message: "No sales found" });
-    }
+    const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(200).json({
       message: "Sales fetched successfully",
-      count: sales.length,
       sales,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalCount: totalCount,
+        limit: limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
     });
   } catch (error) {
     console.error("Error fetching sales:", error);
@@ -297,13 +312,23 @@ router.put("/mark-delivered/:id", async (req, res) => {
       return res.status(404).json({ message: "Stock record not found for this product" });
     }
 
-    // 4️⃣ Update stock — reduce by sale quantity
+    // 4️⃣ Check if sufficient stock is available
+    if (stock.quantity < sale.qty) {
+      return res.status(400).json({ 
+        message: `Insufficient stock! Available: ${stock.quantity}, Required: ${sale.qty}. Cannot mark as delivered.`,
+        availableStock: stock.quantity,
+        requiredQuantity: sale.qty,
+        productName: stock.product.name,
+        measurementName: stock.measurement.name
+      });
+    }
+
+    // 5️⃣ Update stock — reduce by sale quantity
     stock.quantity -= sale.qty;
-    if (stock.quantity < 0) stock.quantity = 0;
 
     await stockRepo.save(stock);
 
-    // 5️⃣ Update sale status and delivery date
+    // 6️⃣ Update sale status and delivery date
     sale.status = "delivered";
     sale.delivered_date = new Date();
 

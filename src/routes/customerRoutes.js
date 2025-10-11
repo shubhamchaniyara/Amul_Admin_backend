@@ -95,11 +95,16 @@ router.delete("/:id", async (req, res) => {
   // GET /customers?city=surat&area=ada
 router.get("/", async (req, res) => {
     try {
-      const { city, area } = req.query;
+      const { city, area, shopName, page = 1, limit = 30 } = req.query;
       const customerRepo = AppDataSource.getRepository("Customer");
+      
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
   
       let query = customerRepo.createQueryBuilder("customer");
-  
+      
+      // Add filters
       if (city) {
         query = query.andWhere("customer.city ILIKE :city", { city: `%${city}%` });
       }
@@ -107,13 +112,34 @@ router.get("/", async (req, res) => {
       if (area) {
         query = query.andWhere("customer.area ILIKE :area", { area: `%${area}%` });
       }
-  
+      
+      if (shopName) {
+        query = query.andWhere("customer.shopName ILIKE :shopName", { shopName: `%${shopName}%` });
+      }
+      
+      // Get total count with filters
+      const totalCount = await query.getCount();
+      
+      // Add pagination
+      query = query.skip(skip).take(limitNum);
+      
+      // Add ordering
+      query = query.orderBy("customer.id", "DESC");
+      
       const customers = await query.getMany();
+      const totalPages = Math.ceil(totalCount / limitNum);
   
       res.json({
         message: "✅ Customers fetched successfully",
-        count: customers.length,
-        data: customers,
+        customers,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: totalPages,
+          totalCount: totalCount,
+          limit: limitNum,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1
+        }
       });
     } catch (error) {
       console.error(error);
